@@ -57,7 +57,9 @@ def main(argv: list[str] | None = None) -> int:
     return 1
     try:
         with get_connection() as conn:
-            user = create_user(conn, args.username, password, Role.ADMIN, must_change_password=False)
+            user = create_user(
+                conn, args.username, password, Role.ADMIN, must_change_password=False
+            )
     except (InvalidUsernameError, PasswordPolicyError, DuplicateUserError) as exc:
         print(f"Could not create administrator: {exc}", file=sys.stderr)
         return 1
