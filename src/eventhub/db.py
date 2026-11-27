@@ -1,22 +1,22 @@
 """Pooled, TLS-protected database access."""
- 
+
 from __future__ import annotations
- 
+
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
- 
+
 from mysql.connector.pooling import MySQLConnectionPool, PooledMySQLConnection
- 
+
 from .config import DbConfig
- 
+
 Connection = PooledMySQLConnection
- 
+
 _pool: MySQLConnectionPool | None = None
 _pool_lock = threading.Lock()
- 
- 
+
+
 def _pool_kwargs(config: DbConfig) -> dict[str, Any]:
     kwargs: dict[str, Any] = {
         "host": config.host,
@@ -36,8 +36,8 @@ def _pool_kwargs(config: DbConfig) -> dict[str, Any]:
         # Development only (enforced in config.py): still encrypted, certificate not verified.
         kwargs.update(ssl_verify_cert=False, ssl_verify_identity=False)
     return kwargs
- 
- 
+
+
 def init_pool(config: DbConfig) -> None:
     """Create the shared connection pool once per process."""
     global _pool  # noqa: PLW0603
@@ -49,8 +49,8 @@ def init_pool(config: DbConfig) -> None:
                 pool_reset_session=True,
                 **_pool_kwargs(config),
             )
- 
- 
+
+
 @contextmanager
 def get_connection() -> Iterator[Connection]:
     """Yield a pooled connection; commit on success, roll back on error, always release."""
@@ -65,8 +65,8 @@ def get_connection() -> Iterator[Connection]:
         raise
     finally:
         conn.close()  # returns the connection to the pool
- 
- 
+
+
 def dict_cursor(conn: Connection) -> Any:
     """Buffered dictionary cursor, so nested cursors never hit 'Unread result found'."""
     return conn.cursor(dictionary=True, buffered=True)

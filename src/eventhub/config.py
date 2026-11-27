@@ -1,24 +1,24 @@
 """Configuration loaded from environment variables only."""
- 
+
 from __future__ import annotations
- 
+
 import os
 from dataclasses import dataclass, field
- 
+
 ENVIRONMENTS = frozenset({"development", "production"})
- 
- 
+
+
 class ConfigError(RuntimeError):
     """Raised when required configuration is missing or invalid."""
- 
- 
+
+
 def _require(key: str) -> str:
     value = os.environ.get(key, "").strip()
     if not value:
         raise ConfigError(f"Missing required environment variable: {key}")
     return value
- 
- 
+
+
 def _int(key: str, default: int, minimum: int, maximum: int) -> int:
     raw = os.environ.get(key, "").strip() or str(default)
     try:
@@ -28,12 +28,12 @@ def _int(key: str, default: int, minimum: int, maximum: int) -> int:
     if not minimum <= value <= maximum:
         raise ConfigError(f"{key} must be between {minimum} and {maximum}")
     return value
- 
- 
+
+
 def _flag(key: str) -> bool:
     return os.environ.get(key, "").strip().lower() in {"1", "true", "yes"}
- 
- 
+
+
 @dataclass(frozen=True, slots=True)
 class DbConfig:
     host: str
@@ -44,7 +44,7 @@ class DbConfig:
     ssl_verify: bool
     pool_size: int
     password: str = field(repr=False)  # never printed in repr, logs or tracebacks
- 
+
     @classmethod
     def from_env(cls, environment: str) -> DbConfig:
         # TLS is always used. Certificate verification may only be relaxed in development,
@@ -66,15 +66,15 @@ class DbConfig:
             ssl_verify=ssl_verify,
             pool_size=_int("DB_POOL_SIZE", 10, 1, 32),
         )
- 
- 
+
+
 @dataclass(frozen=True, slots=True)
 class AppConfig:
     environment: str
     session_ttl_minutes: int
     enable_docs: bool
     db: DbConfig
- 
+
     @classmethod
     def from_env(cls) -> AppConfig:
         # Secure by default: anything unset is treated as production.
