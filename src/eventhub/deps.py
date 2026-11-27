@@ -31,7 +31,7 @@ def client_ip(request: Request) -> str | None:
     return request.client.host if request.client else None
 
 
-ConnDep = Annotated[Connection, Depends(get_conn)]
+ConnDep = Annotated[Connection, Depends(get_conn, scope="function")]
 ConfigDep = Annotated[AppConfig, Depends(get_config)]
 BearerDep = Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)]
 
