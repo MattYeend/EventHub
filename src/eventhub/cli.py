@@ -18,7 +18,8 @@ from .accounts import (
 from .config import AppConfig, ConfigError
 from .db import get_connection, init_pool
 from .migrate import MigrationError, apply_migrations
-from .security import PasswordPolicyError
+from .partitions import PartitionError, maintain
+from .security import PasswordPolicyError, utcnow
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -27,6 +28,12 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("migrate", help="Apply pending database migrations")
     admin = sub.add_parser("create-admin", help="Create an administrator account")
     admin.add_argument("--username", required=True)
+    parts = sub.add_parser(
+        "partitions", help="Create upcoming event partitions and drop expired ones"
+    )
+    parts.add_argument("--create-ahead", type=int, default=3)
+    parts.add_argument("--retain-months", type=int, default=None)
+    parts.add_argument("--dry-run", action="store_true", help="Print statements, run nothing")
     return parser
 
 
@@ -48,6 +55,27 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Migration failed: {exc}", file=sys.stderr)
             return 1
         print("Applied: " + ", ".join(applied) if applied else "Database is up to date")
+        return 0
+
+    if args.command == "partitions":
+        retain = config.retention_months if args.retain_months is None else args.retain_months
+        try:
+            with get_connection() as conn:
+                statements = maintain(
+                    conn,
+                    today=utcnow().date(),
+                    create_ahead=args.create_ahead,
+                    retain_months=retain,
+                    dry_run=args.dry_run,
+                )
+        except PartitionError as exc:
+            print(f"Partition maintenance failed: {exc}", file=sys.stderr)
+            return 1
+        prefix = "Would run" if args.dry_run else "Ran"
+        for statement in statements:
+            print(f"{prefix}: {statement}")
+        if not statements:
+            print("Partitions are up to date")
         return 0
 
     # The password is read from the terminal only, never from arguments or the environment.
