@@ -53,15 +53,15 @@ def main(argv: list[str] | None = None) -> int:
     # The password is read from the terminal only, never from arguments or the environment.
     password = getpass.getpass("Password: ")
     if password != getpass.getpass("Confirm password: "):
-        print("Passwords do not match", file=sys.stderr)
-    return 1
+        print("Passwords do not match", file=sys.stderr, flush=True)
+        return 1
     try:
         with get_connection() as conn:
             user = create_user(
                 conn, args.username, password, Role.ADMIN, must_change_password=False
             )
     except (InvalidUsernameError, PasswordPolicyError, DuplicateUserError) as exc:
-        print(f"Could not create administrator: {exc}", file=sys.stderr)
+        print(f"Could not create administrator: {exc}", file=sys.stderr, flush=True)
         return 1
     except errors.ProgrammingError as exc:
         if exc.errno != errorcode.ER_NO_SUCH_TABLE:
