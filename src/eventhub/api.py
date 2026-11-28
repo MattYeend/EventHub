@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from . import accounts, routes_auth, routes_users
+from . import accounts, routes_auth, routes_events, routes_users
 from .config import AppConfig
 from .db import init_pool
 from .security import PasswordPolicyError
@@ -74,4 +74,5 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
 
     app.include_router(routes_auth.router)
     app.include_router(routes_users.router)
+    app.include_router(routes_events.router)
     return app
