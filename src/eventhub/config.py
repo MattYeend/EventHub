@@ -6,6 +6,8 @@ import os
 from dataclasses import dataclass, field
 
 ENVIRONMENTS = frozenset({"development", "production"})
+MIN_RETENTION_MONTHS = 3  # guards against an accidental typo wiping recent data
+MAX_RETENTION_MONTHS = 120
 
 
 class ConfigError(RuntimeError):
@@ -74,6 +76,7 @@ class AppConfig:
     session_ttl_minutes: int
     enable_docs: bool
     db: DbConfig
+    retention_months: int = 12
 
     @classmethod
     def from_env(cls) -> AppConfig:
@@ -89,4 +92,7 @@ class AppConfig:
             session_ttl_minutes=_int("SESSION_TTL_MINUTES", 60, 5, 480),
             enable_docs=enable_docs,
             db=DbConfig.from_env(environment),
+            retention_months=_int(
+                "EVENT_RETENTION_MONTHS", 12, MIN_RETENTION_MONTHS, MAX_RETENTION_MONTHS
+            ),
         )
