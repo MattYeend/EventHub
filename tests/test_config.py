@@ -14,6 +14,7 @@ ALL_KEYS = (
     "DB_POOL_SIZE",
     "DB_SSL_VERIFY",
     "DB_SSL_CA",
+    "EVENT_RETENTION_MONTHS",
 )
 BASE = {
     "DB_HOST": "db.example.internal",
@@ -90,3 +91,15 @@ def test_missing_variable_is_reported(monkeypatch):
 def test_password_not_in_repr(monkeypatch):
     set_env(monkeypatch)
     assert "s3cret-value" not in repr(AppConfig.from_env())
+
+
+def test_retention_defaults_to_twelve_months(monkeypatch):
+    set_env(monkeypatch)
+    assert AppConfig.from_env().retention_months == 12
+
+
+@pytest.mark.parametrize("value", ["0", "2", "121", "abc"])
+def test_retention_has_a_safe_minimum(monkeypatch, value):
+    set_env(monkeypatch, EVENT_RETENTION_MONTHS=value)
+    with pytest.raises(ConfigError):
+        AppConfig.from_env()
